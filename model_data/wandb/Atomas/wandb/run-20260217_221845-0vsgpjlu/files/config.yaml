@@ -1,0 +1,162 @@
+wandb_version: 1
+
+project:
+  desc: null
+  value: Atomas
+version:
+  desc: null
+  value: Atomas
+data_dir:
+  desc: null
+  value: ./data
+dataset:
+  desc: null
+  value: ChEBI-20_data
+split:
+  desc: null
+  value: distilled
+train_split:
+  desc: null
+  value: train
+valid_split:
+  desc: null
+  value: valid
+test_split:
+  desc: null
+  value: test
+batch_size:
+  desc: null
+  value: 8
+num_workers:
+  desc: null
+  value: 8
+max_lenth:
+  desc: null
+  value: 512
+model_size:
+  desc: null
+  value: base
+queue_size:
+  desc: null
+  value: 13200
+task:
+  desc: null
+  value: genmol
+momentum:
+  desc: null
+  value: 0.995
+alpha:
+  desc: null
+  value: 0.4
+tsclosswt:
+  desc: null
+  value: 1
+lmlosswt:
+  desc: null
+  value: 10
+wtilosswt:
+  desc: null
+  value: 1
+textencoder:
+  desc: null
+  value: molt5
+encode_text_lr:
+  desc: null
+  value: 0.0001
+encode_smiles_lr:
+  desc: null
+  value: 0.0001
+molt5_lr:
+  desc: null
+  value: 0.0001
+text_lr_scale:
+  desc: null
+  value: 0.1
+smiles_lr_scale:
+  desc: null
+  value: 0.1
+decay:
+  desc: null
+  value: 0
+precision:
+  desc: null
+  value: bf16
+accumulate_grad_batches:
+  desc: null
+  value: 1
+accelerator:
+  desc: null
+  value: gpu
+gpus:
+  desc: null
+  value: 2
+num_nodes:
+  desc: null
+  value: 1
+gradient_clip_val:
+  desc: null
+  value: 1.0
+log_every_n_steps:
+  desc: null
+  value: 10
+max_epochs:
+  desc: null
+  value: 100
+start_valid_epoch:
+  desc: null
+  value: 95
+track_grad_norm:
+  desc: null
+  value: -1
+temp_dir:
+  desc: null
+  value: ./output_data/Atomas
+resume_from_checkpoint:
+  desc: null
+  value: ''
+_wandb:
+  desc: null
+  value:
+    python_version: 3.8.20
+    cli_version: 0.15.12
+    framework: huggingface
+    huggingface_version: 4.34.0
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1771337925.080703
+    t:
+      1:
+      - 1
+      - 5
+      - 9
+      - 11
+      - 41
+      - 49
+      - 50
+      - 53
+      - 55
+      2:
+      - 1
+      - 5
+      - 9
+      - 11
+      - 41
+      - 49
+      - 50
+      - 53
+      - 55
+      3:
+      - 7
+      - 13
+      - 16
+      - 23
+      4: 3.8.20
+      5: 0.15.12
+      6: 4.34.0
+      8:
+      - 5
+      13: linux-x86_64
+    m:
+    - 1: trainer/global_step
+      6:
+      - 3

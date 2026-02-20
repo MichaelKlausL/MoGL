@@ -1,0 +1,284 @@
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/training_type/ddp.py:20: LightningDeprecationWarning: The `pl.plugins.training_type.ddp.DDPPlugin` is deprecated in v1.6 and will be removed in v1.8. Use `pl.strategies.ddp.DDPStrategy` instead.
+  rank_zero_deprecation(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:445: LightningDeprecationWarning: Setting `Trainer(gpus=2)` is deprecated in v1.7 and will be removed in v2.0. Please use `Trainer(accelerator='gpu', devices=2)` instead.
+  rank_zero_deprecation(
+Using bfloat16 Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+Global seed set to 42
+Initializing distributed: GLOBAL_RANK: 0, MEMBER: 1/2
+----------------------------------------------------------------------------------------------------
+distributed_backend=nccl
+All distributed processes registered. Starting with 2 processes
+----------------------------------------------------------------------------------------------------
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [2, 3]
+   | Name               | Type                       | Params
+-------------------------------------------------------------------
+0  | molt5              | T5ForConditionalGeneration | 247 M
+1  | text_linear        | Linear                     | 513
+2  | smiles_linear      | Linear                     | 513
+3  | molt5_m            | T5ForConditionalGeneration | 247 M
+4  | text_linear_m      | Linear                     | 513
+5  | smiles_linear_m    | Linear                     | 513
+6  | text_weight_fc_0   | Sequential                 | 1.2 M
+7  | smiles_weight_fc_0 | Sequential                 | 1.2 M
+8  | text_weight_fc_1   | Sequential                 | 1.2 M
+9  | smiles_weight_fc_1 | Sequential                 | 1.2 M
+10 | text_weight_fc_2   | Sequential                 | 1.2 M
+11 | smiles_weight_fc_2 | Sequential                 | 1.2 M
+12 | wti_loss           | CrossEn                    | 0
+13 | t_ctm1             | CTM                        | 1.8 M
+14 | t_block1           | TCBlock                    | 2.4 M
+15 | t_ctm2             | CTM                        | 1.8 M
+16 | t_block2           | TCBlock                    | 2.4 M
+17 | s_ctm1             | CTM                        | 1.8 M
+18 | s_block1           | TCBlock                    | 2.4 M
+19 | s_ctm2             | CTM                        | 1.8 M
+20 | s_block2           | TCBlock                    | 2.4 M
+-------------------------------------------------------------------
+271 M     Trainable params
+247 M     Non-trainable params
+518 M     Total params
+2,075.187 Total estimated model params size (MB)
+Epoch 0:   0%|                                                                                | 0/4952 [00:00<?, ?it/s]
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_bleu_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_Exact', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_levenshtein_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_maccs_sims_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_rdk_sims_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_morgan_sims_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:232: UserWarning: You called `self.log('valid_validity_score', ...)` in your `validation_epoch_end` but the value needs to be floating point. Converting it to torch.float32.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_R@1', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_R@5', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_R@10', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_R@50', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_MedianR', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_TtS_MeanR', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_R@1', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_R@5', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_R@10', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_R@50', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_MedianR', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_StT_MeanR', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_bleu_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_Exact', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_levenshtein_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_maccs_sims_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_rdk_sims_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_morgan_sims_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:536: PossibleUserWarning: It is recommended to use `self.log('valid_validity_score', ..., sync_dist=True)` when logging on epoch level in distributed setting to accumulate the metric across devices.
+  warning_cache.warn(
+Traceback (most recent call last):
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 652, in _call_and_handle_interrupt
+    return self.strategy.launcher.launch(trainer_fn, *args, trainer=self, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/launchers/subprocess_script.py", line 93, in launch
+    return function(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 741, in _fit_impl
+    results = self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1166, in _run
+    results = self._run_stage()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1252, in _run_stage
+    return self._run_train()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1282, in _run_train
+    self.fit_loop.run()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/fit_loop.py", line 269, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 203, in advance
+    batch_output = self.batch_loop.run(kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/batch/training_batch_loop.py", line 87, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 201, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 248, in _run_optimization
+    self._optimizer_step(optimizer, opt_idx, kwargs.get("batch_idx", 0), closure)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 358, in _optimizer_step
+    self.trainer._call_lightning_module_hook(
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1549, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/core/module.py", line 1666, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/core/optimizer.py", line 168, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, self._optimizer_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/ddp.py", line 286, in optimizer_step
+    optimizer_output = super().optimizer_step(optimizer, opt_idx, closure, model, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/strategy.py", line 216, in optimizer_step
+    return self.precision_plugin.optimizer_step(model, optimizer, opt_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/native_amp.py", line 80, in optimizer_step
+    return super().optimizer_step(model, optimizer, optimizer_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 153, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/optimizer.py", line 280, in wrapper
+    out = func(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/optimizer.py", line 33, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/adam.py", line 121, in step
+    loss = closure()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 138, in _wrap_closure
+    closure_result = closure()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 146, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 132, in closure
+    step_output = self._step_fn()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 407, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1703, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/ddp.py", line 349, in training_step
+    return self.model(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1156, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1110, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])  # type: ignore[index]
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/overrides/base.py", line 79, in forward
+    output = self.module.training_step(*inputs, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 741, in training_step
+    loss_tsc, loss_lm, loss_wti = self(
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 515, in forward
+    self._momentum_update()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 711, in _momentum_update
+    param_m.data = param_m.data * self.momentum + param.data * (1. - self.momentum)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB (GPU 0; 47.41 GiB total capacity; 9.21 GiB already allocated; 70.44 MiB free; 9.33 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "main.py", line 207, in <module>
+    main()
+  File "main.py", line 203, in main
+    train(args)
+  File "main.py", line 136, in train
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=valid_loader)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 700, in fit
+    self._call_and_handle_interrupt(
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 666, in _call_and_handle_interrupt
+    self.strategy.reconciliate_processes(traceback.format_exc())
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/ddp.py", line 451, in reconciliate_processes
+    raise DeadlockDetectedException(f"DeadLock detected from rank: {self.global_rank} \n {trace}")
+pytorch_lightning.utilities.exceptions.DeadlockDetectedException: DeadLock detected from rank: 0
+ Traceback (most recent call last):
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 652, in _call_and_handle_interrupt
+    return self.strategy.launcher.launch(trainer_fn, *args, trainer=self, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/launchers/subprocess_script.py", line 93, in launch
+    return function(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 741, in _fit_impl
+    results = self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1166, in _run
+    results = self._run_stage()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1252, in _run_stage
+    return self._run_train()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1282, in _run_train
+    self.fit_loop.run()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/fit_loop.py", line 269, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 203, in advance
+    batch_output = self.batch_loop.run(kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/batch/training_batch_loop.py", line 87, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/loop.py", line 200, in run
+    self.advance(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 201, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 248, in _run_optimization
+    self._optimizer_step(optimizer, opt_idx, kwargs.get("batch_idx", 0), closure)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 358, in _optimizer_step
+    self.trainer._call_lightning_module_hook(
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1549, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/core/module.py", line 1666, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/core/optimizer.py", line 168, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, self._optimizer_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/ddp.py", line 286, in optimizer_step
+    optimizer_output = super().optimizer_step(optimizer, opt_idx, closure, model, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/strategy.py", line 216, in optimizer_step
+    return self.precision_plugin.optimizer_step(model, optimizer, opt_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/native_amp.py", line 80, in optimizer_step
+    return super().optimizer_step(model, optimizer, optimizer_idx, closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 153, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/optimizer.py", line 280, in wrapper
+    out = func(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/optimizer.py", line 33, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/optim/adam.py", line 121, in step
+    loss = closure()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 138, in _wrap_closure
+    closure_result = closure()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 146, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 132, in closure
+    step_output = self._step_fn()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 407, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/trainer/trainer.py", line 1703, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/strategies/ddp.py", line 349, in training_step
+    return self.model(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1156, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/parallel/distributed.py", line 1110, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])  # type: ignore[index]
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/pytorch_lightning/overrides/base.py", line 79, in forward
+    output = self.module.training_step(*inputs, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 741, in training_step
+    loss_tsc, loss_lm, loss_wti = self(
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 515, in forward
+    self._momentum_update()
+  File "/home/jxzhou/software/anaconda3/envs/atomas/lib/python3.8/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/jxzhou/projects/Atomas/models/atomas.py", line 711, in _momentum_update
+    param_m.data = param_m.data * self.momentum + param.data * (1. - self.momentum)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 96.00 MiB (GPU 0; 47.41 GiB total capacity; 9.21 GiB already allocated; 70.44 MiB free; 9.33 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
