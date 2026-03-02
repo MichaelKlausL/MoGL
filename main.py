@@ -1,6 +1,8 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+
 from torch.utils.data import DataLoader
-from dataset.dataset import ChEBI_20_data_Dataset, PubChem_Dataset
+from dataset.dataset import ChEBI_20_data_Dataset, PubChem_Dataset, MolFrag_Dataset
 from models.atomas import Atomas
 import torch
 from pathlib import Path
@@ -11,7 +13,6 @@ from pytorch_lightning.loggers import WandbLogger
 import argparse
 import yaml
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1"
 os.environ["NCCL_P2P_DISABLE"] = "1"
 
 mol_data_directory = "./data"
@@ -49,6 +50,26 @@ def train(args):
         
         valid_data = None
         test_data = None
+
+    elif args.dataset == "MolFrag":
+        train_data = MolFrag_Dataset(
+            args.data_dir,
+            args.dataset,
+            args.train_split,
+        )
+        
+        valid_data = MolFrag_Dataset(
+            args.data_dir,
+            args.dataset,
+            args.valid_split,
+        )
+
+        test_data = MolFrag_Dataset(
+            args.data_dir,
+            args.dataset,
+            args.test_split,
+        )
+
     else:
         raise Exception("choose pubchemstm or ChEBI_20_data")
     
@@ -169,7 +190,7 @@ def main():
     ########## for dataset ##########
     parser.add_argument("--data_dir", type=str, default=mol_data_directory)
     parser.add_argument("--dataset", type=str, default=str(config["dataset"]), choices=["pubchemstm", "ChEBI-20_data"])
-    parser.add_argument("--split", type=str, default="distilled")
+    parser.add_argument("--split", type=str, default="filtered")
     parser.add_argument("--train_split", type=str, default=config["train_split"])
     parser.add_argument("--valid_split", type=str, default=config["valid_split"])
     parser.add_argument("--test_split", type=str, default=config["test_split"])
@@ -185,6 +206,9 @@ def main():
     parser.add_argument("--tsclosswt", type=float, default=config["tsclosswt"])
     parser.add_argument("--lmlosswt", type=float, default=config["lmlosswt"])
     parser.add_argument("--wtilosswt", type=float, default=config["wtilosswt"])
+    parser.add_argument("--missing_fragment_loss_wt", type=float, default=config["missing_fragment_loss_wt"])
+    parser.add_argument("--frag2mol_loss_wt", type=float, default=config["frag2mol_loss_wt"])
+    parser.add_argument("--keyword_loss_wt", type=float, default=config["keyword_loss_wt"])
     parser.add_argument("--textencoder", type=str, default="molt5")
     parser.add_argument("--encode_text_lr", type=float, default=config["encode_text_lr"])
     parser.add_argument("--encode_smiles_lr", type=float, default=config["encode_smiles_lr"])
@@ -196,7 +220,7 @@ def main():
     parser.add_argument("--precision", default=config["precision"])
     parser.add_argument("--accumulate_grad_batches", type=int, default=config["accumulate_grad_batches"])
     parser.add_argument("--accelerator", type=str, default="gpu")
-    parser.add_argument("--gpus", type=int, default=2)
+    parser.add_argument("--gpus", type=int, default=4)
     parser.add_argument("--num_nodes", type=int, default=1)
     parser.add_argument("--gradient_clip_val", type=float, default=1.0)
     parser.add_argument("--log_every_n_steps", type=int, default=10)

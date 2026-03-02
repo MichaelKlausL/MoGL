@@ -19,6 +19,8 @@ class BaseModel(pl.LightningModule, ABC):
     ):
         super().__init__()
         self.args = args
+        self.gen_valid_start_epoch = getattr(args, "gen_valid_start_epoch", 45)
+        self.gen_valid_interval = getattr(args, "gen_valid_interval", 5)
         
     @abstractmethod
     def forward(
@@ -35,6 +37,16 @@ class BaseModel(pl.LightningModule, ABC):
         self.log("train_loss", loss, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True, on_step=True)
         
         return loss
+
+    def _should_run_gen_valid(self):
+        if self.args.mode == "eval":
+            return True
+        current_epoch = self.trainer.current_epoch
+        if current_epoch >= self.args.start_valid_epoch:
+            return True
+        if current_epoch < self.gen_valid_start_epoch:
+            return False
+        return (current_epoch - self.gen_valid_start_epoch) % self.gen_valid_interval == 0
     
     def validation_step(self, batch, batch_idx):
         # extract text and smiles feature for retrieval
@@ -49,7 +61,7 @@ class BaseModel(pl.LightningModule, ABC):
         }
         
         # for generation
-        if self.trainer.current_epoch >=self.args.start_valid_epoch or self.args.mode=="eval":
+        if self._should_run_gen_valid():
             if self.trainer.local_rank==0:
                 if not os.path.exists(self.args.temp_dir):
                     os.mkdir(self.args.temp_dir) 
@@ -136,7 +148,7 @@ class BaseModel(pl.LightningModule, ABC):
         self.log("valid_StT_MeanR", st_metrics['MeanR'], on_epoch=True)
 
         
-        if self.trainer.current_epoch >=self.args.start_valid_epoch:
+        if self._should_run_gen_valid() & (self.args.mode == "train"):
 
             # merge prediction files
             search_name = f'valid_tmp_*_epoch={self.trainer.current_epoch}.txt'
@@ -484,8 +496,230 @@ class Atomas(BaseModel):
         self.s_block1 = TCBlock(dim=model_dim, num_heads=8)
         self.s_ctm2 = CTM(sample_ratio=0.5, embed_dim=model_dim, dim_out=model_dim, k=3)
         self.s_block2 = TCBlock(dim=model_dim, num_heads=8)
+
+        # 任务相关配置：缺失片段/片段到分子/关键词填空
+        self.missing_frag_min = getattr(args, "missing_frag_min", 1)
+        self.missing_frag_max = getattr(args, "missing_frag_max", 2)
         
-    def forward(self, text, smiles, alpha):
+    def _format_smiles(self, smiles):
+        # 分子用 <bos>/<eos> 包裹
+        return f"<bos>{smiles}<eos>"
+
+    def _format_fragment(self, fragment):
+        # 片段用 <bof>/<eof> 包裹
+        return f"<bof>{fragment}<eof>"
+
+    def _sentinel_token(self, idx):
+        # T5 的 sentinel token
+        return f"<extra_id_{idx}>"
+
+    def _build_missing_fragment_task(self, description, fragments, rng):
+        # 缺失片段补全任务：
+        # 1) 在 fragments 中随机选出若干片段进行遮挡
+        # 2) 输入侧用 <extra_id_k> 替换被遮挡片段，未遮挡片段保留
+        # 3) 输出侧按 sentinel 顺序拼接被遮挡的真实片段
+        if not fragments:
+            input_text = f"missing fragment: fragments ; description {description}"
+            target_text = ""
+            return input_text, target_text
+
+        # 至少遮挡 1 个片段，最多不超过 len-1，避免全部遮挡导致输入为空
+        max_missing = min(self.missing_frag_max, max(len(fragments) - 1, 1))
+        min_missing = min(self.missing_frag_min, max_missing)
+        if min_missing >= max_missing:
+            missing_count = max_missing
+        else:
+            missing_count = rng.randint(min_missing, max_missing + 1)
+        missing_indices = list(rng.choice(len(fragments), size=missing_count, replace=False))
+        missing_set = set(missing_indices)
+
+        # 为每个被遮挡位置分配唯一 sentinel token
+        sentinel_map = {}
+        for idx, frag_idx in enumerate(sorted(missing_indices)):
+            sentinel_map[frag_idx] = self._sentinel_token(idx)
+
+        # 输入侧：遮挡位置用 sentinel 替换，其余片段加 <bof>/<eof>
+        input_fragments = [
+            (sentinel_map[i] if i in missing_set else self._format_fragment(frag))
+            for i, frag in enumerate(fragments)
+        ]
+
+        # 输出侧：按 sentinel 顺序拼接被遮挡的真实片段
+        target_segments = [
+            f"{sentinel_map[i]} {self._format_fragment(fragments[i])}"
+            for i in sorted(missing_indices)
+        ]
+
+        input_text = f"missing fragment: fragments {' '.join(input_fragments)}; description {description}"
+        target_text = " ".join(target_segments)
+        return input_text, target_text
+
+    def _build_frag2mol_task(self, description, fragments, smiles):
+        # 片段到分子生成任务：
+        # 输入为片段序列 + 描述，输出为完整分子 SMILES
+        input_fragments = [self._format_fragment(frag) for frag in fragments]
+        input_text = f"fragments to molecule: {' '.join(input_fragments)}; description {description}"
+        target_text = self._format_smiles(smiles)
+        return input_text, target_text
+
+    def _build_keyword_fill_task(self, description, keywords, rng):
+        # 关键词填空任务（基于 description）：
+        # 1) 用 keywords 在 description 中做大小写敏感的精确匹配
+        # 2) 命中位置用 <extra_id_k> 替换，生成输入文本
+        # 3) 输出侧按出现顺序拼接被替换的原始片段
+        if not keywords:
+            input_text = f"keyword fill: description {description}"
+            target_text = ""
+            return input_text, target_text
+
+        # 预处理关键词：去空并按长度降序，便于重叠时优先最长匹配
+        cleaned_keywords = [kw for kw in keywords if isinstance(kw, str) and kw]
+        if not cleaned_keywords:
+            input_text = f"keyword fill: description {description}"
+            target_text = ""
+            return input_text, target_text
+
+        # 按比例抽取需要掩码的关键词数量（40%，下取整，至少 1）
+        mask_count = max(1, int(len(cleaned_keywords) * 0.4))
+        if mask_count > len(cleaned_keywords):
+            mask_count = len(cleaned_keywords)
+        masked_keyword_indices = rng.choice(len(cleaned_keywords), size=mask_count, replace=False)
+        masked_keywords = [cleaned_keywords[i] for i in masked_keyword_indices]
+
+        # 仅在被选中的关键词上进行匹配和掩码
+        cleaned_keywords = sorted(set(masked_keywords), key=len, reverse=True)
+
+        # 收集所有匹配区间 (start, end, keyword)
+        spans = []
+        for kw in cleaned_keywords:
+            start = 0
+            while True:
+                idx = description.find(kw, start)
+                if idx == -1:
+                    break
+                spans.append((idx, idx + len(kw), kw))
+                start = idx + len(kw)
+
+        if not spans:
+            input_text = f"keyword fill: description {description}"
+            target_text = ""
+            return input_text, target_text
+
+        # 重叠处理：优先最长匹配，其次靠前匹配
+        spans.sort(key=lambda x: (-(x[1] - x[0]), x[0]))
+        selected = []
+        occupied = []
+        for span in spans:
+            s_start, s_end, _ = span
+            overlap = any(not (s_end <= o_start or s_start >= o_end) for o_start, o_end in occupied)
+            if overlap:
+                continue
+            selected.append(span)
+            occupied.append((s_start, s_end))
+
+        # 按文本顺序编号 sentinel，构造输入/输出
+        selected.sort(key=lambda x: x[0])
+        masked_parts = []
+        target_segments = []
+        cursor = 0
+        for idx, (s_start, s_end, kw) in enumerate(selected):
+            sentinel = self._sentinel_token(idx)
+            masked_parts.append(description[cursor:s_start])
+            masked_parts.append(sentinel)
+            target_segments.append(f"{sentinel} {description[s_start:s_end]}")
+            cursor = s_end
+        masked_parts.append(description[cursor:])
+
+        masked_description = "".join(masked_parts)
+        input_text = f"keyword fill: description {masked_description}"
+        target_text = " ".join(target_segments)
+        return input_text, target_text
+
+    def _build_task_pairs(self, batch):
+        # 基于 batch 构造三种任务的输入/输出对（分别返回）
+        descriptions = batch.get("description", [])
+        smiles_list = batch.get("smiles", [])
+        fragments_list = batch.get("fragments", [])
+        keywords_list = batch.get("keywords", [])
+
+        missing_inputs = []
+        missing_targets = []
+        frag2mol_inputs = []
+        frag2mol_targets = []
+        keyword_inputs = []
+        keyword_targets = []
+
+        # 使随机过程在每个 step 稳定可复现
+        step = int(getattr(self.trainer, "global_step", 0)) if hasattr(self, "trainer") else 0
+        rng = np.random.RandomState(step)
+
+        for i in range(len(smiles_list)):
+            description = str(descriptions[i]) if i < len(descriptions) else ""
+            smiles = str(smiles_list[i]) if i < len(smiles_list) else ""
+
+            fragments = fragments_list[i] if i < len(fragments_list) else []
+            if isinstance(fragments, str):
+                fragments = [f for f in fragments.split() if f]
+            keywords = keywords_list[i] if i < len(keywords_list) else []
+            if isinstance(keywords, str):
+                keywords = [k for k in keywords.split() if k]
+
+            # 缺失片段补全
+            mf_inp, mf_tgt = self._build_missing_fragment_task(description, fragments, rng)
+            missing_inputs.append(mf_inp)
+            missing_targets.append(mf_tgt)
+
+            # 片段到分子生成
+            f2m_inp, f2m_tgt = self._build_frag2mol_task(description, fragments, smiles)
+            frag2mol_inputs.append(f2m_inp)
+            frag2mol_targets.append(f2m_tgt)
+
+            # 关键词填空
+            kf_inp, kf_tgt = self._build_keyword_fill_task(description, keywords, rng)
+            keyword_inputs.append(kf_inp)
+            keyword_targets.append(kf_tgt)
+
+        return (
+            missing_inputs,
+            missing_targets,
+            frag2mol_inputs,
+            frag2mol_targets,
+            keyword_inputs,
+            keyword_targets,
+        )
+
+    def _compute_seq2seq_loss(self, inputs, targets):
+        # 计算三任务的 seq2seq 损失
+        max_len = int(getattr(self.args, "max_lenth", 512))
+        model_inputs = self.tokenizer(
+            inputs,
+            padding="max_length",
+            max_length=max_len,
+            truncation=True,
+            return_tensors="pt",
+        ).to(self.molt5.device)
+        model_targets = self.tokenizer(
+            targets,
+            padding="max_length",
+            max_length=max_len,
+            truncation=True,
+            return_tensors="pt",
+        ).to(self.molt5.device)
+        labels = model_targets.input_ids.masked_fill(
+            model_targets.input_ids == self.tokenizer.pad_token_id, -100
+        )
+        outputs = self.molt5(
+            input_ids=model_inputs.input_ids,
+            attention_mask=model_inputs.attention_mask,
+            labels=labels,
+            return_dict=True,
+        )
+        return outputs.loss
+
+    def forward(self, batch, alpha):
+        # 原始 Atomas 训练：文本-分子对比 + 生成 + 分层对齐
+        text = batch["description"]
+        smiles = batch["smiles"]
         with torch.no_grad():
             self.temp.clamp_(0.001,0.5)
             
@@ -618,9 +852,23 @@ class Atomas(BaseModel):
         loss_wti_s2t_2 = self.wti_loss(s2t_logits_2 * logit_scale)
         loss_wti_2 = (loss_wti_t2s_2 + loss_wti_s2t_2) / 2
         
-        loss_wti = loss_wti_0 + loss_wti_1 + loss_wti_2  
+        loss_wti = loss_wti_0 + loss_wti_1 + loss_wti_2
+
+        # 新增三任务：缺失片段补全 / 片段到分子 / 关键词填空
+        (
+            missing_inputs,
+            missing_targets,
+            frag2mol_inputs,
+            frag2mol_targets,
+            keyword_inputs,
+            keyword_targets,
+        ) = self._build_task_pairs(batch)
+
+        loss_missing = self._compute_seq2seq_loss(missing_inputs, missing_targets)
+        loss_frag2mol = self._compute_seq2seq_loss(frag2mol_inputs, frag2mol_targets)
+        loss_keyword = self._compute_seq2seq_loss(keyword_inputs, keyword_targets)
         
-        return loss_tsc, loss_lm, loss_wti
+        return loss_tsc, loss_lm, loss_wti, loss_missing, loss_frag2mol, loss_keyword
     
     def align_level_0(self, t_token_dict, s_token_dict):
         
@@ -737,16 +985,33 @@ class Atomas(BaseModel):
     
     
     def training_step(self, batch, batch_idx):
-    
-        loss_tsc, loss_lm, loss_wti = self(
-                batch["description"], batch["smiles"], self.args.alpha
-            )        
-        loss = self.args.tsclosswt * loss_tsc + self.args.lmlosswt * loss_lm + self.args.wtilosswt * loss_wti
+        # 训练时同时计算原有损失与新增三任务的 seq2seq 损失
+        loss_tsc, loss_lm, loss_wti, loss_missing, loss_frag2mol, loss_keyword = self(
+                batch, self.args.alpha
+            )
+        missing_loss_wt = float(getattr(self.args, "missing_fragment_loss_wt", 1.0))
+        frag2mol_loss_wt = float(getattr(self.args, "frag2mol_loss_wt", 1.0))
+        keyword_loss_wt = float(getattr(self.args, "keyword_loss_wt", 1.0))
+        loss_task = (
+            missing_loss_wt * loss_missing
+            + frag2mol_loss_wt * loss_frag2mol
+            + keyword_loss_wt * loss_keyword
+        )
+        loss = (
+            self.args.tsclosswt * loss_tsc
+            + self.args.lmlosswt * loss_lm
+            + self.args.wtilosswt * loss_wti
+            + loss_task
+        )
         
         self.log("train_loss_tol", loss, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
         self.log("train_loss_tsc", loss_tsc, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
         self.log("train_loss_lm", loss_lm, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
         self.log("train_loss_wti", loss_wti, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
+        self.log("train_loss_task", loss_task, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
+        self.log("train_loss_missing", loss_missing, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
+        self.log("train_loss_frag2mol", loss_frag2mol, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
+        self.log("train_loss_keyword", loss_keyword, batch_size=self.args.batch_size, sync_dist=True, on_epoch=True)
         
         return loss
                          
