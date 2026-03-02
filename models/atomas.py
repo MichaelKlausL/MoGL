@@ -720,6 +720,12 @@ class Atomas(BaseModel):
         # 原始 Atomas 训练：文本-分子对比 + 生成 + 分层对齐
         text = batch["description"]
         smiles = batch["smiles"]
+        tsc_loss_wt = float(getattr(self.args, "tsclosswt", 1.0))
+        wti_loss_wt = float(getattr(self.args, "wtilosswt", 1.0))
+        missing_loss_wt = float(getattr(self.args, "missing_fragment_loss_wt", 1.0))
+        frag2mol_loss_wt = float(getattr(self.args, "frag2mol_loss_wt", 1.0))
+        keyword_loss_wt = float(getattr(self.args, "keyword_loss_wt", 1.0))
+
         with torch.no_grad():
             self.temp.clamp_(0.001,0.5)
             
@@ -736,45 +742,48 @@ class Atomas(BaseModel):
         smile_feats = smiles_output.last_hidden_state # shape = [bs, max_len, smiles_dim]
         
         ###============== text-smile CL moco ===================###
-        # moco
-        text_feats_moco = self.text_linear(text_feats.permute(0, 2, 1).contiguous()).squeeze(-1)    # shape = [bs, text_dim]
-        smiles_feats_moco = self.smiles_linear(smile_feats.permute(0, 2, 1).contiguous()).squeeze(-1)   # shape = [bs, smiles_dim]
-        ## normalized features
-        text_feats_moco = text_feats_moco / text_feats_moco.norm(dim=-1, keepdim=True)
-        smiles_feats_moco = smiles_feats_moco / smiles_feats_moco.norm(dim=-1, keepdim=True)  
-        
-        # get momentum features
-        with torch.no_grad(): 
-            if self.training:
-                self._momentum_update()
-            text_output_m = self.molt5_m.encoder(text_ids.input_ids, attention_mask = text_ids.attention_mask)
-            text_feats_m = text_output_m.last_hidden_state
-            text_feats_moco_m = self.text_linear_m(text_feats_m.permute(0, 2, 1).contiguous()).squeeze()
-            text_feats_moco_m = text_feats_moco_m / text_feats_moco_m.norm(dim=-1, keepdim=True)
-            text_feat_all = torch.cat([text_feats_moco_m.t(),self.text_queue.clone().detach()],dim=1)
-            
-            smiles_output_m = self.molt5_m.encoder(smiles_ids.input_ids, attention_mask = smiles_ids.attention_mask)
-            smile_feats_m = smiles_output_m.last_hidden_state
-            smiles_feats_moco_m = self.smiles_linear_m(smile_feats_m.permute(0, 2, 1).contiguous()).squeeze()
-            smiles_feats_moco_m = smiles_feats_moco_m / smiles_feats_moco_m.norm(dim=-1, keepdim=True)
-            smiles_feat_all = torch.cat([smiles_feats_moco_m.t(),self.smiles_queue.clone().detach()],dim=1)
-            sim_t2s_m = text_feats_moco_m @ smiles_feat_all / self.temp  
-            sim_s2t_m = smiles_feats_moco_m @ text_feat_all / self.temp 
-            sim_targets = torch.zeros(sim_t2s_m.size()).to(self.molt5.device)
-            sim_targets.fill_diagonal_(1)          
+        if tsc_loss_wt != 0:
+            # moco
+            text_feats_moco = self.text_linear(text_feats.permute(0, 2, 1).contiguous()).squeeze(-1)    # shape = [bs, text_dim]
+            smiles_feats_moco = self.smiles_linear(smile_feats.permute(0, 2, 1).contiguous()).squeeze(-1)   # shape = [bs, smiles_dim]
+            ## normalized features
+            text_feats_moco = text_feats_moco / text_feats_moco.norm(dim=-1, keepdim=True)
+            smiles_feats_moco = smiles_feats_moco / smiles_feats_moco.norm(dim=-1, keepdim=True)
 
-            sim_t2s_targets = alpha * F.softmax(sim_t2s_m, dim=1) + (1 - alpha) * sim_targets
-            sim_s2t_targets = alpha * F.softmax(sim_s2t_m, dim=1) + (1 - alpha) * sim_targets  
-        sim_t2s = text_feats_moco @ smiles_feat_all / self.temp
-        sim_s2t = smiles_feats_moco @ text_feat_all / self.temp
-        
-        loss_t2s = -torch.sum(F.log_softmax(sim_t2s, dim=1)*sim_t2s_targets,dim=1).mean()
-        loss_s2t = -torch.sum(F.log_softmax(sim_s2t, dim=1)*sim_s2t_targets,dim=1).mean()
-        
-        loss_tsc = (loss_t2s+loss_s2t)/2      
-        
-        if self.training:
-            self._dequeue_and_enqueue(text_feats_moco_m, smiles_feats_moco_m)   
+            # get momentum features
+            with torch.no_grad():
+                if self.training:
+                    self._momentum_update()
+                text_output_m = self.molt5_m.encoder(text_ids.input_ids, attention_mask = text_ids.attention_mask)
+                text_feats_m = text_output_m.last_hidden_state
+                text_feats_moco_m = self.text_linear_m(text_feats_m.permute(0, 2, 1).contiguous()).squeeze()
+                text_feats_moco_m = text_feats_moco_m / text_feats_moco_m.norm(dim=-1, keepdim=True)
+                text_feat_all = torch.cat([text_feats_moco_m.t(),self.text_queue.clone().detach()],dim=1)
+
+                smiles_output_m = self.molt5_m.encoder(smiles_ids.input_ids, attention_mask = smiles_ids.attention_mask)
+                smile_feats_m = smiles_output_m.last_hidden_state
+                smiles_feats_moco_m = self.smiles_linear_m(smile_feats_m.permute(0, 2, 1).contiguous()).squeeze()
+                smiles_feats_moco_m = smiles_feats_moco_m / smiles_feats_moco_m.norm(dim=-1, keepdim=True)
+                smiles_feat_all = torch.cat([smiles_feats_moco_m.t(),self.smiles_queue.clone().detach()],dim=1)
+                sim_t2s_m = text_feats_moco_m @ smiles_feat_all / self.temp
+                sim_s2t_m = smiles_feats_moco_m @ text_feat_all / self.temp
+                sim_targets = torch.zeros(sim_t2s_m.size()).to(self.molt5.device)
+                sim_targets.fill_diagonal_(1)
+
+                sim_t2s_targets = alpha * F.softmax(sim_t2s_m, dim=1) + (1 - alpha) * sim_targets
+                sim_s2t_targets = alpha * F.softmax(sim_s2t_m, dim=1) + (1 - alpha) * sim_targets
+            sim_t2s = text_feats_moco @ smiles_feat_all / self.temp
+            sim_s2t = smiles_feats_moco @ text_feat_all / self.temp
+
+            loss_t2s = -torch.sum(F.log_softmax(sim_t2s, dim=1)*sim_t2s_targets,dim=1).mean()
+            loss_s2t = -torch.sum(F.log_softmax(sim_s2t, dim=1)*sim_s2t_targets,dim=1).mean()
+
+            loss_tsc = (loss_t2s+loss_s2t)/2
+
+            if self.training:
+                self._dequeue_and_enqueue(text_feats_moco_m, smiles_feats_moco_m)
+        else:
+            loss_tsc = text_feats.new_zeros(())
         
 
         if self.args.task =="genmol":
@@ -803,56 +812,58 @@ class Atomas(BaseModel):
         loss_lm = decoder_output.loss        
             
         
-        text_feats = allgather(text_feats)
-        text_masks = allgather(text_ids.attention_mask)
-        
-        
-        smile_feats = allgather(smile_feats)
-        smile_masks = allgather(smiles_ids.attention_mask)
-        batch_size = text_feats.shape[0]
-        torch.distributed.barrier()  # force sync  
-        t_idx_token = torch.arange(text_feats.size(1))[None, :].repeat(text_feats.size(0), 1)
-        t_agg_weight = text_feats.new_ones(text_feats.size(0), text_feats.size(1), 1)
-        t_token_dict = {'x': text_feats,
-                        'token_num': text_feats.size(1),
-                        'idx_token': t_idx_token,
-                        'agg_weight': t_agg_weight,
-                        'mask': text_masks}
-        
-        s_idx_token = torch.arange(smile_feats.size(1))[None, :].repeat(smile_feats.size(0), 1)
-        s_agg_weight = smile_feats.new_ones(smile_feats.size(0), smile_feats.size(1), 1)
-        s_token_dict = {'x': smile_feats,
-                        'token_num': smile_feats.size(1),
-                        'idx_token': s_idx_token,
-                        'agg_weight': s_agg_weight,
-                        'mask': smile_masks}
-        # level 0
-        t2s_logits_0, s2t_logits_0, logits_0 = self.align_level_0(t_token_dict, s_token_dict)
-        loss_wti_t2s_0 = self.wti_loss(t2s_logits_0 * logit_scale)
-        loss_wti_s2t_0 = self.wti_loss(s2t_logits_0 * logit_scale)
-        loss_wti_0 = (loss_wti_t2s_0 + loss_wti_s2t_0) / 2
-    
-        # level 1
-        t_token_dict = self.t_block1(self.t_ctm1(t_token_dict))
-        s_token_dict = self.s_block1(self.s_ctm1(s_token_dict))
+        if wti_loss_wt != 0:
+            text_feats = allgather(text_feats)
+            text_masks = allgather(text_ids.attention_mask)
+
+            smile_feats = allgather(smile_feats)
+            smile_masks = allgather(smiles_ids.attention_mask)
+            batch_size = text_feats.shape[0]
+            torch.distributed.barrier()  # force sync
+            t_idx_token = torch.arange(text_feats.size(1))[None, :].repeat(text_feats.size(0), 1)
+            t_agg_weight = text_feats.new_ones(text_feats.size(0), text_feats.size(1), 1)
+            t_token_dict = {'x': text_feats,
+                            'token_num': text_feats.size(1),
+                            'idx_token': t_idx_token,
+                            'agg_weight': t_agg_weight,
+                            'mask': text_masks}
+
+            s_idx_token = torch.arange(smile_feats.size(1))[None, :].repeat(smile_feats.size(0), 1)
+            s_agg_weight = smile_feats.new_ones(smile_feats.size(0), smile_feats.size(1), 1)
+            s_token_dict = {'x': smile_feats,
+                            'token_num': smile_feats.size(1),
+                            'idx_token': s_idx_token,
+                            'agg_weight': s_agg_weight,
+                            'mask': smile_masks}
+            # level 0
+            t2s_logits_0, s2t_logits_0, logits_0 = self.align_level_0(t_token_dict, s_token_dict)
+            loss_wti_t2s_0 = self.wti_loss(t2s_logits_0 * logit_scale)
+            loss_wti_s2t_0 = self.wti_loss(s2t_logits_0 * logit_scale)
+            loss_wti_0 = (loss_wti_t2s_0 + loss_wti_s2t_0) / 2
+
+            # level 1
+            t_token_dict = self.t_block1(self.t_ctm1(t_token_dict))
+            s_token_dict = self.s_block1(self.s_ctm1(s_token_dict))
 
 
-        t2s_logits_1, s2t_logits_1, logits_1 = self.align_level_1(t_token_dict, s_token_dict)
-        loss_wti_t2s_1 = self.wti_loss(t2s_logits_1 * logit_scale)
-        loss_wti_s2t_1 = self.wti_loss(s2t_logits_1 * logit_scale)
-        loss_wti_1 = (loss_wti_t2s_1 + loss_wti_s2t_1) / 2
+            t2s_logits_1, s2t_logits_1, logits_1 = self.align_level_1(t_token_dict, s_token_dict)
+            loss_wti_t2s_1 = self.wti_loss(t2s_logits_1 * logit_scale)
+            loss_wti_s2t_1 = self.wti_loss(s2t_logits_1 * logit_scale)
+            loss_wti_1 = (loss_wti_t2s_1 + loss_wti_s2t_1) / 2
 
-        
-        # level 2
-        t_token_dict = self.t_block2(self.t_ctm2(t_token_dict))
-        s_token_dict = self.s_block2(self.s_ctm2(s_token_dict))
-        
-        t2s_logits_2, s2t_logits_2, logits_2 = self.align_level_2(t_token_dict, s_token_dict)
-        loss_wti_t2s_2 = self.wti_loss(t2s_logits_2 * logit_scale)
-        loss_wti_s2t_2 = self.wti_loss(s2t_logits_2 * logit_scale)
-        loss_wti_2 = (loss_wti_t2s_2 + loss_wti_s2t_2) / 2
-        
-        loss_wti = loss_wti_0 + loss_wti_1 + loss_wti_2
+
+            # level 2
+            t_token_dict = self.t_block2(self.t_ctm2(t_token_dict))
+            s_token_dict = self.s_block2(self.s_ctm2(s_token_dict))
+
+            t2s_logits_2, s2t_logits_2, logits_2 = self.align_level_2(t_token_dict, s_token_dict)
+            loss_wti_t2s_2 = self.wti_loss(t2s_logits_2 * logit_scale)
+            loss_wti_s2t_2 = self.wti_loss(s2t_logits_2 * logit_scale)
+            loss_wti_2 = (loss_wti_t2s_2 + loss_wti_s2t_2) / 2
+
+            loss_wti = loss_wti_0 + loss_wti_1 + loss_wti_2
+        else:
+            loss_wti = text_feats.new_zeros(())
 
         # 新增三任务：缺失片段补全 / 片段到分子 / 关键词填空
         (
@@ -864,9 +875,20 @@ class Atomas(BaseModel):
             keyword_targets,
         ) = self._build_task_pairs(batch)
 
-        loss_missing = self._compute_seq2seq_loss(missing_inputs, missing_targets)
-        loss_frag2mol = self._compute_seq2seq_loss(frag2mol_inputs, frag2mol_targets)
-        loss_keyword = self._compute_seq2seq_loss(keyword_inputs, keyword_targets)
+        if missing_loss_wt != 0:
+            loss_missing = self._compute_seq2seq_loss(missing_inputs, missing_targets)
+        else:
+            loss_missing = loss_lm.new_zeros(())
+
+        if frag2mol_loss_wt != 0:
+            loss_frag2mol = self._compute_seq2seq_loss(frag2mol_inputs, frag2mol_targets)
+        else:
+            loss_frag2mol = loss_lm.new_zeros(())
+
+        if keyword_loss_wt != 0:
+            loss_keyword = self._compute_seq2seq_loss(keyword_inputs, keyword_targets)
+        else:
+            loss_keyword = loss_lm.new_zeros(())
         
         return loss_tsc, loss_lm, loss_wti, loss_missing, loss_frag2mol, loss_keyword
     
