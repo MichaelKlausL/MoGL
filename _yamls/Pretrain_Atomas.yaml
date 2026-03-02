@@ -1,4 +1,5 @@
-version: "Atomas"  
+project: "MolFrag-Ablation"
+version: "global+hierarchy"
 
 # data
 dataset: "ChEBI-20_data"
@@ -11,13 +12,16 @@ max_lenth: 512
 # model
 model_size: "base"
 queue_size: 13200
-task: "genmol"
+task: "gentext"
 tsclosswt: 1
 lmlosswt: 10
 wtilosswt: 1
+missing_fragment_loss_wt: 0
+frag2mol_loss_wt: 0
+keyword_loss_wt: 0
 encode_text_lr: 1e-4
 encode_smiles_lr: 1e-4
-molt5_lr: 1e-4
+molt5_lr: 2e-4
 text_lr_scale: 0.1
 smiles_lr_scale: 0.1
 decay: 0
@@ -25,6 +29,6 @@ decay: 0
 # train
 precision: "bf16"
 accumulate_grad_batches: 1
-max_epochs: 100
-start_valid_epoch: 95
+max_epochs: 20
+start_valid_epoch: 15
 resume_from_checkpoint: ""

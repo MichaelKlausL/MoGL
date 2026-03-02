@@ -1,4 +1,4 @@
-version: "Atomas"  
+version: "MolFrag-genmol-base"  
 
 # data
 dataset: "ChEBI-20_data"
@@ -7,7 +7,7 @@ batch_size: 1
 max_lenth: 512
 
 # model
-model_size: "large"
+model_size: "base"
 queue_size: 13200
 task: "genmol"
 tsclosswt: 1
@@ -22,4 +22,4 @@ decay: 0
 
 # train
 precision: "bf16"
-resume_from_checkpoint: "./pretrain_model_path""
+resume_from_checkpoint: "/home/jxzhou/projects/MolFrag/model_datackpt/MolFrag/last.ckpt"
