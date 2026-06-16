@@ -3,7 +3,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
 
 from torch.utils.data import DataLoader
 from dataset.dataset import ChEBI_20_data_Dataset, PubChem_Dataset, MolFrag_Dataset
-from models.atomas import Atomas
+from models.molfrag import Molfrag
 import torch
 from pathlib import Path
 import pytorch_lightning as pl
@@ -13,7 +13,7 @@ from pytorch_lightning.loggers import WandbLogger
 import argparse
 import yaml
 
-os.environ["NCCL_P2P_DISABLE"] = "1"
+# os.environ["NCCL_P2P_DISABLE"] = "1"
 
 mol_data_directory = "./data"
 model_data_directory = "./model_data"
@@ -98,7 +98,7 @@ def train(args):
     else:
         test_loader=None
 
-    model = Atomas(
+    model = Molfrag(
         args=args,
     )
     
@@ -107,7 +107,7 @@ def train(args):
     
     if valid_loader is not None:
         if args.task=="genmol":
-            monitor = "valid_bleu_score"
+            monitor = "valid_bleu_tiebreak"
             filename = args.version + "-{epoch:02d}-{step:02d}-{train_loss_tol:.4f}" + ("-{valid_bleu_score:.3f}-{valid_Exact:.3f}-{valid_levenshtein_score:.3f}")
         else:
             monitor = "valid_BLEU2"
@@ -180,11 +180,11 @@ def train(args):
     
 def main():
     
-    with open('_yamls/Pretrain_Atomas.yaml', 'r') as f:
+    with open('/home/hejiawei/MolFrag/_yamls/Pretrain_Molfrag.yaml', 'r') as f:
         config = yaml.safe_load(f)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--project", type=str, default="Atomas")
+    parser.add_argument("--project", type=str, default="MolFrag")
     parser.add_argument("--mode", type=str, default="train")
     parser.add_argument("--version", type=str, default=config["version"])
     ########## for dataset ##########

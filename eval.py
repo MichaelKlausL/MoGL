@@ -1,7 +1,9 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 from torch.utils.data import DataLoader
 from dataset.dataset import ChEBI_20_data_Dataset, PubChem_Dataset
-from models.atomas import Atomas
+from models.molfrag import Molfrag
 import torch
 from pathlib import Path
 import pytorch_lightning as pl
@@ -33,7 +35,7 @@ def evaluation(args):
     )
 
 
-    model = Atomas(
+    model = Molfrag(
         args=args,
     )
 
@@ -47,11 +49,11 @@ def evaluation(args):
     
 def main():
     
-    with open('_yamls/Eval_Atomas.yaml', 'r') as f:
+    with open('_yamls/Eval_Molfrag.yaml', 'r') as f:
         config = yaml.safe_load(f)
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--project", type=str, default="Atomas")
+    parser.add_argument("--project", type=str, default="MolFrag")
     parser.add_argument("--mode", type=str, default="eval")
     parser.add_argument("--version", type=str, default=config["version"])
     ########## for dataset ##########

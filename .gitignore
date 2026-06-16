@@ -163,3 +163,11 @@ model_data/
 model_datackpt/
 output_data/
 output*.log
+
+
+# data
+*.jsonl
+*.png
+lightning_logs/
+tool/
+*.pyc

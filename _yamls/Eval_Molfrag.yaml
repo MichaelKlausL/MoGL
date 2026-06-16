@@ -1,0 +1,29 @@
+project: "Atomas"
+version: "Atomas-infer-gentext"
+
+# data
+dataset: "ChEBI-20_data"
+test_split: "test"
+batch_size: 1
+max_lenth: 512
+
+# model
+model_size: "base"
+queue_size: 13200
+task: "gentext"
+tsclosswt: 1
+lmlosswt: 10
+wtilosswt: 1
+missing_fragment_loss_wt: 0
+frag2mol_loss_wt: 0
+keyword_loss_wt: 0
+encode_text_lr: 1e-4
+encode_smiles_lr: 1e-4
+molt5_lr: 2e-4
+text_lr_scale: 0.1
+smiles_lr_scale: 0.1
+decay: 0
+
+# train
+precision: "bf16"
+resume_from_checkpoint: "/home/hejiawei/Atomas/model_datackpt/Atomas-gentext-base/Atomas-gentext-base-epoch=93-step=155100-train_loss_tol=0.7495-valid_BLEU2=0.633-valid_BLEU4=0.551-valid_ROUGE1=0.689.ckpt"

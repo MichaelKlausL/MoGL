@@ -190,8 +190,12 @@ class BaseModel(pl.LightningModule, ABC):
                 log_io.write('\n')
                 log_io.flush()
                 log_io.close()      
-                self.log("valid_bleu_score", round(bleu_score, 3), on_epoch=True)
-                self.log("valid_Exact", round(exact_match_score, 3), on_epoch=True)
+                bleu_score_round = round(bleu_score, 3)
+                exact_match_score_round = round(exact_match_score, 3)
+                bleu_tiebreak_score = bleu_score_round + exact_match_score_round / 10000.0
+                self.log("valid_bleu_score", bleu_score_round, on_epoch=True)
+                self.log("valid_Exact", exact_match_score_round, on_epoch=True)
+                self.log("valid_bleu_tiebreak", bleu_tiebreak_score, on_epoch=True)
                 self.log("valid_levenshtein_score", round(levenshtein_score, 3), on_epoch=True)
                 self.log("valid_maccs_sims_score", round(maccs_sims_score, 3), on_epoch=True)
                 self.log("valid_rdk_sims_score", round(rdk_sims_score, 3), on_epoch=True)
@@ -218,6 +222,7 @@ class BaseModel(pl.LightningModule, ABC):
             if self.args.task =="genmol":
                 self.log("valid_bleu_score", 0, on_epoch=True)
                 self.log("valid_Exact", 0, on_epoch=True)
+                self.log("valid_bleu_tiebreak", 0, on_epoch=True)
                 self.log("valid_levenshtein_score", 0, on_epoch=True)
                 self.log("valid_maccs_sims_score", 0, on_epoch=True)
                 self.log("valid_rdk_sims_score", 0, on_epoch=True)
@@ -432,7 +437,7 @@ class BaseModel(pl.LightningModule, ABC):
 
         return optimizer
     
-class Atomas(BaseModel):
+class Molfrag(BaseModel):
     def __init__(self,
                  args,
                 ):
@@ -999,7 +1004,7 @@ class Atomas(BaseModel):
     
     def from_molt5(self):
         # pretrain_dir = str(self.args.data_dir) + "/pretrained/molt5decoder-" + str(self.args.model_size)
-        pretrain_dir = "/home/jxzhou/model/molt5/molt5-" + str(self.args.model_size)
+        pretrain_dir = "/home/hejiawei/models/molt5/molt5-" + str(self.args.model_size)
         model = T5ForConditionalGeneration.from_pretrained(pretrain_dir)
         tokenizer = T5Tokenizer.from_pretrained(pretrain_dir, model_max_length=512)
         model_dim = model.shared.weight.shape[-1]

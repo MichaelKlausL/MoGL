@@ -1,0 +1,17 @@
+nohup python main.py > output_molfrag-genmol-base.log 2>&1 & disown
+nohup python main.py > output_molfrag-gentext-base.log 2>&1 & disown
+nohup python main.py > output_global+hierarchy.log 2>&1 & disown
+nohup python main.py > output_frag_missing-only.log 2>&1 & disown
+nohup python main.py > output_frag2mol-only.log 2>&1 & disown
+nohup python main.py > output_keyloss-only.log 2>&1 & disown
+nohup python main.py > output_fragloss+frag2mol.log 2>&1 & disown
+nohup python main.py > output_fragloss+frag2mol-v2.log 2>&1 & disown
+nohup python main.py > output_molfrag.log 2>&1 & disown
+nohup python main.py > output_fragloss+keyloss.log 2>&1 & disown
+nohup python main.py > output_frag2mol+keyloss.log 2>&1 & disown
+nohup python main.py > output_atomas-pretrain.log 2>&1 & disown
+nohup python eval.py > output_eval.log 2>&1 & disown
+nohup python main.py > output_frag2mol+keyloss-v2.log 2>&1 & disown
+nohup python main.py > output_global-only_test.log 2>&1 & disown
+nohup python main.py > output_frag2mol-only-v2.log 2>&1 & disown
+nohup python main.py > output_fragloss-only-v2.log 2>&1 & disown
