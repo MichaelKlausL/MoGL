@@ -166,6 +166,7 @@ output*.log
 
 
 # data
+data/
 *.jsonl
 *.png
 lightning_logs/

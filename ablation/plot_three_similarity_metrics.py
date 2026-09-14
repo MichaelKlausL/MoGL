@@ -81,13 +81,13 @@ def plot_combined(epochs: List[int], metrics: MetricData, output: Path, dpi: int
     }
     method_label_map = {
         "global-only": "w/o all",
-        "MolFrag": "本章方法",
+        "MolFrag": "MoGL",
         "w/o all": "w/o all",
-        "本章方法": "本章方法",
+        "本章方法": "MoGL",
     }
     method_linestyles = {
         "w/o all": "--",
-        "本章方法": "-",
+        "MoGL": "-",
     }
 
     for metric_name in TARGET_METRICS:
