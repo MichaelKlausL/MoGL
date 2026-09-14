@@ -2,37 +2,68 @@
 
 <img src="figs/framework.png" width="600px">
 
-## Requirements
+## Install
 
-To install requirements:
+Clone this repository and install the required packages:
 
-```setup
+```bash
+git clone https://github.com/MichaelKlausL/MoGL.git
+cd MoGL
+
+conda create -n mogl python=3.8 -y
+conda activate mogl
 pip install -r requirements.txt
 ```
 
+## Weights
 
-## Training
+* TODO
 
-To train the model(s) in the paper, run this command:
+## Dataset
 
-```train
-python main.py --data_dir <your data path> --task <choose genmol or gentext>
+The experiments are conducted on the ChEBI-20 dataset. Please download it from:
+
+* [ChEBI-20](https://huggingface.co/datasets/liupf/ChEBI-20-MM)
+
+For motif decomposition and chemical keyword extraction, please follow the instructions in [`data_prepro/`](data_prepro/README.md).
+
+## Train
+
+Training configurations are provided in [`_yamls/Pretrain_Molfrag.yaml`](_yamls/Pretrain_Molfrag.yaml).
+
+Text-guided molecule generation:
+
+```bash
+python main.py \
+  --data_dir <your_data_path> \
+  --task genmol
 ```
 
-Set task weight in _yamls/Pretrain_Molfrag.yaml
+Molecule captioning:
+
+```bash
+python main.py \
+  --data_dir <your_data_path> \
+  --task gentext
+```
 
 ## Evaluation
 
-To evaluate model, run:
+Text-guided molecule generation:
 
-```eval
-python eval.py --resume_from_checkpoint mymodel.ckpt 
+```bash
+python eval.py \
+  --data_dir <your_data_path> \
+  --task genmol \
+  --resume_from_checkpoint <checkpoint_path>
 ```
 
-## Data Preprocessing
+Molecule captioning:
 
-See data_prepro/
+```bash
+python eval.py \
+  --data_dir <your_data_path> \
+  --task gentext \
+  --resume_from_checkpoint <checkpoint_path>
+```
 
-## Core Code
-
-See models/molfrag.py (class Molfrag)
