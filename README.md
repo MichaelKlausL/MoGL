@@ -1,4 +1,4 @@
-# Method2
+# MoGL
 
 <img src="figs/framework.png" width="600px">
 
