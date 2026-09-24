@@ -17,39 +17,40 @@ CHINESE_FONT_PATH = Path("/usr/share/fonts/truetype/droid/DroidSansFallbackFull.
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="将 MACCS FTS、RDK FTS、Morgan FTS 画在同一个坐标系中。"
+        description="Plot MACCS FTS, RDK FTS, and Morgan FTS on the same axes."
     )
     parser.add_argument(
         "--output",
         type=Path,
         default=Path("plots/similarity_metrics_combined.png"),
-        help="输出图片路径，默认 plots/similarity_metrics_combined.png",
+        help="Output image path (default: plots/similarity_metrics_combined.png).",
     )
     parser.add_argument(
         "--dpi",
         type=int,
         default=220,
-        help="图片 DPI，默认 220。",
+        help="Output image DPI (default: 220).",
     )
     return parser.parse_args()
 
 
 def validate_inputs(epochs: List[int], metrics: MetricData) -> None:
     if not epochs:
-        raise ValueError("EPOCHS 不能为空。")
+        raise ValueError("EPOCHS must not be empty.")
 
     for metric_name in TARGET_METRICS:
         if metric_name not in metrics:
-            raise KeyError(f"未找到指标: {metric_name}")
+            raise KeyError(f"Metric not found: {metric_name}")
 
         method_dict = metrics[metric_name]
         if not isinstance(method_dict, dict) or len(method_dict) != 2:
-            raise ValueError(f"{metric_name} 必须包含且仅包含两个方法。")
+            raise ValueError(f"{metric_name} must contain exactly two methods.")
 
         for method_name, values in method_dict.items():
             if len(values) != len(epochs):
                 raise ValueError(
-                    f"{metric_name}/{method_name} 长度({len(values)})与 EPOCHS 长度({len(epochs)})不一致。"
+                    f"The length of {metric_name}/{method_name} ({len(values)}) does not "
+                    f"match the length of EPOCHS ({len(epochs)})."
                 )
 
 
@@ -83,7 +84,7 @@ def plot_combined(epochs: List[int], metrics: MetricData, output: Path, dpi: int
         "global-only": "w/o all",
         "MolFrag": "MoGL",
         "w/o all": "w/o all",
-        "本章方法": "MoGL",
+        "Our Method": "MoGL",
     }
     method_linestyles = {
         "w/o all": "--",
@@ -167,7 +168,7 @@ def main() -> None:
     args = parse_args()
     validate_inputs(EPOCHS, METRICS)
     plot_combined(EPOCHS, METRICS, args.output, args.dpi)
-    print(f"已保存: {args.output}")
+    print(f"Saved: {args.output}")
 
 
 if __name__ == "__main__":

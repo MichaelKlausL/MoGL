@@ -1,12 +1,12 @@
 # =========================================
-# 配置区（统一在这里设置）
+# Configuration (set all options here)
 # =========================================
 
 INPUT_PATH = "/home/hejiawei/data/ChEBI-20_data/valid.txt"
 OUTPUT_JSONL_PATH = "frag_valid.jsonl"
 
 # =========================================
-# 依赖导入
+# Dependency imports
 # =========================================
 
 import csv
@@ -23,7 +23,7 @@ BRICS_TIMEOUT_SECONDS = 5
 RECAP_TIMEOUT_SECONDS = 5
 
 # =========================================
-# fragments 提取
+# Fragment extraction
 # =========================================
 
 def fragments_with_star(smiles):
@@ -86,17 +86,17 @@ def _recap_decompose_with_timeout(mol):
         signal.signal(signal.SIGALRM, old_handler)       
 
 # =========================================
-# keywords（化学实体）提取
+# Keyword (chemical entity) extraction
 # =========================================
 
 def extract_keywords(text):
     doc = Document(text)
     keywords = [cem.text for cem in doc.cems]
-    # 去重但保持顺序
+    # Remove duplicates while preserving order
     return list(dict.fromkeys(keywords))
 
 # =========================================
-# 读取已处理的 CID（用于断点续跑）
+# Read processed CIDs to support resuming interrupted runs
 # =========================================
 
 def load_processed_cids(jsonl_path):
@@ -124,7 +124,7 @@ def load_processed_cids(jsonl_path):
     return processed_cids
 
 # =========================================
-# CSV/TXT -> JSONL（支持进度条 + 断点续跑）
+# CSV/TXT -> JSONL (with a progress bar and resume support)
 # =========================================
 
 def _read_rows(input_path):
@@ -157,7 +157,7 @@ def csv_to_jsonl(input_path, output_jsonl):
                 continue
 
             if cid in processed_cids:
-                continue  # 跳过已处理样本
+                continue  # Skip samples that have already been processed
 
             fragments = fragments_with_star(smiles)
             keywords = extract_keywords(description)
@@ -173,10 +173,10 @@ def csv_to_jsonl(input_path, output_jsonl):
             out_f.write(
                 json.dumps(sample, ensure_ascii=False, indent=2)
             )
-            out_f.write("\n\n")  # 样本之间空一行，方便阅读
+            out_f.write("\n\n")  # Add a blank line between samples for readability
 
 # =========================================
-# 程序入口
+# Entry point
 # =========================================
 
 if __name__ == "__main__":

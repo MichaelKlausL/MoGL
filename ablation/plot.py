@@ -12,7 +12,7 @@ MetricData = Dict[str, Dict[str, NumberList]]
 
 
 # =====================
-# 直接在这里改数据即可
+# Edit the data directly here.
 # =====================
 EPOCHS: List[int] = [20, 30, 40, 50]
 
@@ -46,53 +46,56 @@ METRICS: MetricData = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="画出某个指标在不同 epoch 下的折线图（每张图两个方法，默认使用代码内置数据）。"
+        description=(
+            "Plot a metric across epochs, comparing two methods per figure. "
+            "By default, the data defined in this script is used."
+        )
     )
     parser.add_argument(
         "--input",
         type=Path,
         default=None,
-        help="可选：JSON 文件路径。不传则使用代码内置的 EPOCHS/METRICS。",
+        help="Optional path to a JSON file. If omitted, the built-in EPOCHS/METRICS data is used.",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("plots"),
-        help="输出图片目录，默认 plots。",
+        help="Output directory for plots (default: plots).",
     )
     parser.add_argument(
         "--format",
         type=str,
         default="png",
         choices=["png", "jpg", "jpeg", "pdf", "svg"],
-        help="图片格式，默认 png。",
+        help="Output image format (default: png).",
     )
     parser.add_argument(
         "--dpi",
         type=int,
         default=200,
-        help="图片 DPI，默认 200。",
+        help="Output image DPI (default: 200).",
     )
     return parser.parse_args()
 
 
 def load_json(path: Path) -> dict:
     if not path.exists():
-        raise FileNotFoundError(f"输入文件不存在: {path}")
+        raise FileNotFoundError(f"Input file does not exist: {path}")
 
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, dict):
-        raise ValueError("JSON 顶层必须是对象。")
+        raise ValueError("The top-level JSON value must be an object.")
     return data
 
 
 def normalize_data(data: dict) -> Tuple[List[int], MetricData]:
     """
-    支持两种 JSON 格式：
+    Support two JSON formats:
 
-    1) 推荐格式：
+    1) Recommended format:
     {
       "epochs": [1, 2, 3, ...],
       "metrics": {
@@ -104,7 +107,7 @@ def normalize_data(data: dict) -> Tuple[List[int], MetricData]:
       }
     }
 
-    2) 简化格式（自动推断 epoch）：
+    2) Simplified format (epochs are inferred automatically):
     {
       "acc": {
         "method_a": [0.1, 0.2, 0.3],
@@ -121,43 +124,44 @@ def normalize_data(data: dict) -> Tuple[List[int], MetricData]:
         raw_epochs = None
 
     if not isinstance(metrics, dict) or not metrics:
-        raise ValueError("未找到有效的 metrics 数据。")
+        raise ValueError("No valid metrics data was found.")
 
     first_metric = next(iter(metrics.values()))
     if not isinstance(first_metric, dict):
-        raise ValueError("每个指标下应为方法到数值列表的映射。")
+        raise ValueError("Each metric must map method names to lists of values.")
 
     if len(first_metric) != 2:
-        raise ValueError("每张图必须且只能有两个方法。")
+        raise ValueError("Each plot must contain exactly two methods.")
 
     first_method_values = next(iter(first_metric.values()))
     if not isinstance(first_method_values, list) or not first_method_values:
-        raise ValueError("方法对应的数据必须是非空列表。")
+        raise ValueError("The values for each method must be a non-empty list.")
 
     n_points = len(first_method_values)
     if raw_epochs is None:
         epochs = list(range(1, n_points + 1))
     else:
         if not isinstance(raw_epochs, list):
-            raise ValueError("epochs 必须是列表。")
+            raise ValueError("epochs must be a list.")
         if len(raw_epochs) != n_points:
-            raise ValueError("epochs 长度必须与指标曲线长度一致。")
+            raise ValueError("The length of epochs must match the number of metric data points.")
         epochs = raw_epochs
 
     normalized: MetricData = {}
     for metric_name, method_dict in metrics.items():
         if not isinstance(method_dict, dict):
-            raise ValueError(f"指标 {metric_name} 的值应为对象。")
+            raise ValueError(f"The value of metric {metric_name} must be an object.")
         if len(method_dict) != 2:
-            raise ValueError(f"指标 {metric_name} 下方法数量不是 2。")
+            raise ValueError(f"Metric {metric_name} must contain exactly two methods.")
 
         normalized[metric_name] = {}
         for method_name, values in method_dict.items():
             if not isinstance(values, list):
-                raise ValueError(f"{metric_name}/{method_name} 必须是列表。")
+                raise ValueError(f"{metric_name}/{method_name} must be a list.")
             if len(values) != len(epochs):
                 raise ValueError(
-                    f"{metric_name}/{method_name} 长度({len(values)})与 epoch 数({len(epochs)})不一致。"
+                    f"The length of {metric_name}/{method_name} ({len(values)}) does not "
+                    f"match the number of epochs ({len(epochs)})."
                 )
             normalized[metric_name][method_name] = values
 
@@ -166,25 +170,26 @@ def normalize_data(data: dict) -> Tuple[List[int], MetricData]:
 
 def normalize_inline_data(epochs: List[int], metrics: MetricData) -> Tuple[List[int], MetricData]:
     if not isinstance(epochs, list) or not epochs:
-        raise ValueError("EPOCHS 必须是非空列表。")
+        raise ValueError("EPOCHS must be a non-empty list.")
 
     if not isinstance(metrics, dict) or not metrics:
-        raise ValueError("METRICS 必须是非空字典。")
+        raise ValueError("METRICS must be a non-empty dictionary.")
 
     normalized: MetricData = {}
     for metric_name, method_dict in metrics.items():
         if not isinstance(method_dict, dict):
-            raise ValueError(f"指标 {metric_name} 的值应为对象。")
+            raise ValueError(f"The value of metric {metric_name} must be an object.")
         if len(method_dict) != 2:
-            raise ValueError(f"指标 {metric_name} 下方法数量不是 2。")
+            raise ValueError(f"Metric {metric_name} must contain exactly two methods.")
 
         normalized[metric_name] = {}
         for method_name, values in method_dict.items():
             if not isinstance(values, list):
-                raise ValueError(f"{metric_name}/{method_name} 必须是列表。")
+                raise ValueError(f"{metric_name}/{method_name} must be a list.")
             if len(values) != len(epochs):
                 raise ValueError(
-                    f"{metric_name}/{method_name} 长度({len(values)})与 epoch 数({len(epochs)})不一致。"
+                    f"The length of {metric_name}/{method_name} ({len(values)}) does not "
+                    f"match the number of epochs ({len(epochs)})."
                 )
             normalized[metric_name][method_name] = values
 
@@ -237,7 +242,7 @@ def main() -> None:
         safe_metric_name = metric_name.replace("/", "_").replace(" ", "_")
         out_file = args.output_dir / f"{safe_metric_name}.{args.format}"
         plot_metric(epochs, metric_name, method_dict, out_file, args.dpi)
-        print(f"已保存: {out_file}")
+        print(f"Saved: {out_file}")
 
 
 if __name__ == "__main__":

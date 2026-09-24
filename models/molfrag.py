@@ -502,33 +502,33 @@ class Molfrag(BaseModel):
         self.s_ctm2 = CTM(sample_ratio=0.5, embed_dim=model_dim, dim_out=model_dim, k=3)
         self.s_block2 = TCBlock(dim=model_dim, num_heads=8)
 
-        # 任务相关配置：缺失片段/片段到分子/关键词填空
+        # Task configuration: missing-fragment completion, fragment-to-molecule generation, and keyword infilling
         self.missing_frag_min = getattr(args, "missing_frag_min", 1)
         self.missing_frag_max = getattr(args, "missing_frag_max", 2)
         
     def _format_smiles(self, smiles):
-        # 分子用 <bos>/<eos> 包裹
+        # Wrap molecules with <bos>/<eos>
         return f"<bos>{smiles}<eos>"
 
     def _format_fragment(self, fragment):
-        # 片段用 <bof>/<eof> 包裹
+        # Wrap fragments with <bof>/<eof>
         return f"<bof>{fragment}<eof>"
 
     def _sentinel_token(self, idx):
-        # T5 的 sentinel token
+        # T5 sentinel token
         return f"<extra_id_{idx}>"
 
     def _build_missing_fragment_task(self, description, fragments, rng):
-        # 缺失片段补全任务：
-        # 1) 在 fragments 中随机选出若干片段进行遮挡
-        # 2) 输入侧用 <extra_id_k> 替换被遮挡片段，未遮挡片段保留
-        # 3) 输出侧按 sentinel 顺序拼接被遮挡的真实片段
+        # Missing-fragment completion task:
+        # 1) Randomly select fragments to mask
+        # 2) Replace masked fragments with <extra_id_k> in the input and retain unmasked fragments
+        # 3) Concatenate the original masked fragments in sentinel order for the target
         if not fragments:
             input_text = f"missing fragment: fragments ; description {description}"
             target_text = ""
             return input_text, target_text
 
-        # 至少遮挡 1 个片段，最多不超过 len-1，避免全部遮挡导致输入为空
+        # Mask at least one fragment but no more than len - 1 to avoid an empty input
         max_missing = min(self.missing_frag_max, max(len(fragments) - 1, 1))
         min_missing = min(self.missing_frag_min, max_missing)
         if min_missing >= max_missing:
@@ -538,18 +538,18 @@ class Molfrag(BaseModel):
         missing_indices = list(rng.choice(len(fragments), size=missing_count, replace=False))
         missing_set = set(missing_indices)
 
-        # 为每个被遮挡位置分配唯一 sentinel token
+        # Assign a unique sentinel token to each masked position
         sentinel_map = {}
         for idx, frag_idx in enumerate(sorted(missing_indices)):
             sentinel_map[frag_idx] = self._sentinel_token(idx)
 
-        # 输入侧：遮挡位置用 sentinel 替换，其余片段加 <bof>/<eof>
+        # Input: replace masked positions with sentinels and wrap all other fragments with <bof>/<eof>
         input_fragments = [
             (sentinel_map[i] if i in missing_set else self._format_fragment(frag))
             for i, frag in enumerate(fragments)
         ]
 
-        # 输出侧：按 sentinel 顺序拼接被遮挡的真实片段
+        # Target: concatenate the original masked fragments in sentinel order
         target_segments = [
             f"{sentinel_map[i]} {self._format_fragment(fragments[i])}"
             for i in sorted(missing_indices)
@@ -560,41 +560,41 @@ class Molfrag(BaseModel):
         return input_text, target_text
 
     def _build_frag2mol_task(self, description, fragments, smiles):
-        # 片段到分子生成任务：
-        # 输入为片段序列 + 描述，输出为完整分子 SMILES
+        # Fragment-to-molecule generation task:
+        # Input: fragment sequence and description; target: complete molecular SMILES
         input_fragments = [self._format_fragment(frag) for frag in fragments]
         input_text = f"fragments to molecule: {' '.join(input_fragments)}; description {description}"
         target_text = self._format_smiles(smiles)
         return input_text, target_text
 
     def _build_keyword_fill_task(self, description, keywords, rng):
-        # 关键词填空任务（基于 description）：
-        # 1) 用 keywords 在 description 中做大小写敏感的精确匹配
-        # 2) 命中位置用 <extra_id_k> 替换，生成输入文本
-        # 3) 输出侧按出现顺序拼接被替换的原始片段
+        # Keyword-infilling task based on the description:
+        # 1) Find exact, case-sensitive matches for keywords in the description
+        # 2) Replace matched spans with <extra_id_k> to create the input text
+        # 3) Concatenate the original replaced spans in occurrence order for the target
         if not keywords:
             input_text = f"keyword fill: description {description}"
             target_text = ""
             return input_text, target_text
 
-        # 预处理关键词：去空并按长度降序，便于重叠时优先最长匹配
+        # Remove empty keywords and sort by descending length to prioritize the longest overlapping match
         cleaned_keywords = [kw for kw in keywords if isinstance(kw, str) and kw]
         if not cleaned_keywords:
             input_text = f"keyword fill: description {description}"
             target_text = ""
             return input_text, target_text
 
-        # 按比例抽取需要掩码的关键词数量（40%，下取整，至少 1）
+        # Select the number of keywords to mask by ratio (40%, rounded down, with a minimum of one)
         mask_count = max(1, int(len(cleaned_keywords) * 0.4))
         if mask_count > len(cleaned_keywords):
             mask_count = len(cleaned_keywords)
         masked_keyword_indices = rng.choice(len(cleaned_keywords), size=mask_count, replace=False)
         masked_keywords = [cleaned_keywords[i] for i in masked_keyword_indices]
 
-        # 仅在被选中的关键词上进行匹配和掩码
+        # Match and mask only the selected keywords
         cleaned_keywords = sorted(set(masked_keywords), key=len, reverse=True)
 
-        # 收集所有匹配区间 (start, end, keyword)
+        # Collect all matching spans as (start, end, keyword)
         spans = []
         for kw in cleaned_keywords:
             start = 0
@@ -610,7 +610,7 @@ class Molfrag(BaseModel):
             target_text = ""
             return input_text, target_text
 
-        # 重叠处理：优先最长匹配，其次靠前匹配
+        # Resolve overlaps by preferring longer matches, then earlier matches
         spans.sort(key=lambda x: (-(x[1] - x[0]), x[0]))
         selected = []
         occupied = []
@@ -622,7 +622,7 @@ class Molfrag(BaseModel):
             selected.append(span)
             occupied.append((s_start, s_end))
 
-        # 按文本顺序编号 sentinel，构造输入/输出
+        # Number sentinels in text order and construct the input and target
         selected.sort(key=lambda x: x[0])
         masked_parts = []
         target_segments = []
@@ -641,7 +641,7 @@ class Molfrag(BaseModel):
         return input_text, target_text
 
     def _build_task_pairs(self, batch):
-        # 基于 batch 构造三种任务的输入/输出对（分别返回）
+        # Construct and return separate input-target pairs for all three tasks in the batch
         descriptions = batch.get("description", [])
         smiles_list = batch.get("smiles", [])
         fragments_list = batch.get("fragments", [])
@@ -654,7 +654,7 @@ class Molfrag(BaseModel):
         keyword_inputs = []
         keyword_targets = []
 
-        # 使随机过程在每个 step 稳定可复现
+        # Make random sampling deterministic and reproducible for each step
         step = int(getattr(self.trainer, "global_step", 0)) if hasattr(self, "trainer") else 0
         rng = np.random.RandomState(step)
 
@@ -669,17 +669,17 @@ class Molfrag(BaseModel):
             if isinstance(keywords, str):
                 keywords = [k for k in keywords.split() if k]
 
-            # 缺失片段补全
+            # Missing-fragment completion
             mf_inp, mf_tgt = self._build_missing_fragment_task(description, fragments, rng)
             missing_inputs.append(mf_inp)
             missing_targets.append(mf_tgt)
 
-            # 片段到分子生成
+            # Fragment-to-molecule generation
             f2m_inp, f2m_tgt = self._build_frag2mol_task(description, fragments, smiles)
             frag2mol_inputs.append(f2m_inp)
             frag2mol_targets.append(f2m_tgt)
 
-            # 关键词填空
+            # Keyword infilling
             kf_inp, kf_tgt = self._build_keyword_fill_task(description, keywords, rng)
             keyword_inputs.append(kf_inp)
             keyword_targets.append(kf_tgt)
@@ -694,7 +694,7 @@ class Molfrag(BaseModel):
         )
 
     def _compute_seq2seq_loss(self, inputs, targets):
-        # 计算三任务的 seq2seq 损失
+        # Compute the seq2seq loss for all three tasks
         max_len = int(getattr(self.args, "max_lenth", 512))
         model_inputs = self.tokenizer(
             inputs,
@@ -722,7 +722,7 @@ class Molfrag(BaseModel):
         return outputs.loss
 
     def forward(self, batch, alpha):
-        # 原始 Atomas 训练：文本-分子对比 + 生成 + 分层对齐
+        # Original Atomas training objectives: text-molecule contrastive learning, generation, and hierarchical alignment
         text = batch["description"]
         smiles = batch["smiles"]
         tsc_loss_wt = float(getattr(self.args, "tsclosswt", 1.0))
@@ -870,7 +870,7 @@ class Molfrag(BaseModel):
         else:
             loss_wti = text_feats.new_zeros(())
 
-        # 新增三任务：缺失片段补全 / 片段到分子 / 关键词填空
+        # Additional tasks: missing-fragment completion, fragment-to-molecule generation, and keyword infilling
         (
             missing_inputs,
             missing_targets,
@@ -1012,7 +1012,7 @@ class Molfrag(BaseModel):
     
     
     def training_step(self, batch, batch_idx):
-        # 训练时同时计算原有损失与新增三任务的 seq2seq 损失
+        # During training, compute both the original losses and the seq2seq losses for the three additional tasks
         loss_tsc, loss_lm, loss_wti, loss_missing, loss_frag2mol, loss_keyword = self(
                 batch, self.args.alpha
             )
@@ -1063,4 +1063,4 @@ def concat_all_gather(tensor):
     torch.distributed.all_gather(tensors_gather, tensor, async_op=False)
 
     output = torch.cat(tensors_gather, dim=0)
-    return output 
+    return output

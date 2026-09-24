@@ -63,7 +63,7 @@ class PubChem_Dataset(Dataset):
                     continue
                 item = json.loads(line)
                 smiles = item.get("smiles")
-                # 兼容不同字段名
+                # Support alternative field names
                 description = item.get("description") or item.get("desc") or item.get("text")
                 self.data.append({"smiles": smiles, "description": description})
 
@@ -120,9 +120,9 @@ class MolFrag_Dataset(Dataset):
         dataset,
         split,
     ):
-        # 读取指定 split 的单个 jsonl 文件
-        # 文件格式为多行 JSON 对象，空行分隔
-        # 与其他数据集保持一致：data_path / dataset / {split}.jsonl
+        # Read a single JSONL file for the requested split
+        # Each JSON object can span multiple lines and is separated by a blank line
+        # Follow the same path convention as the other datasets: data_path / dataset / {split}.jsonl
         self.data_path = data_path
         self.dataset = dataset
         self.split = split
@@ -134,7 +134,7 @@ class MolFrag_Dataset(Dataset):
         if not osp.exists(data_file):
             raise FileNotFoundError(f"jsonl file not found: {data_file}")
 
-        # 累积到空行为止，再解析成一条记录
+        # Accumulate lines until a blank line, then parse them as one record
         with open(data_file, "r", encoding="utf-8") as handle:
             buffer = []
             for raw_line in handle:
@@ -155,12 +155,12 @@ class MolFrag_Dataset(Dataset):
 
     def __getitem__(self, idx):
         record = dict(self.records[idx])
-        # DataLoader 默认拼接要求长度一致，这里把变长列表转为字符串
+        # DataLoader's default collation requires equal lengths, so convert variable-length lists to strings
         fragments = record.get("fragments")
         if isinstance(fragments, (list, tuple)):
             record["fragments"] = " ".join([str(item) for item in fragments if item is not None])
         keywords = record.get("keywords")
         if isinstance(keywords, (list, tuple)):
             record["keywords"] = " ".join([str(item) for item in keywords if item is not None])
-        # 所有任务共享同一条数据，返回完整字段供上层构造任务
+        # All tasks share each record; return every field so the caller can construct task inputs
         return record

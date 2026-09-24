@@ -25,7 +25,7 @@ The experiments are conducted on the ChEBI-20 dataset. Please download it from:
 
 * [ChEBI-20](https://huggingface.co/datasets/liupf/ChEBI-20-MM)
 
-For motif decomposition and chemical keyword extraction, please follow the instructions in [`data_prepro/`](data_prepro/README.md).
+For motif decomposition and chemical keyword extraction, please follow the [data preprocessing instructions](data_prepro/README_en.md).
 
 ## Train
 
@@ -66,4 +66,3 @@ python eval.py \
   --task gentext \
   --resume_from_checkpoint <checkpoint_path>
 ```
-

@@ -23,7 +23,7 @@ def build_parser(config):
         type=str,
         nargs="+",
         default=None,
-        help="可选；不传时自动使用 config 里的 resume_from_checkpoint",
+        help="Optional; defaults to resume_from_checkpoint from the config when omitted.",
     )
     parser.add_argument("--method_names", type=str, nargs="*", default=None)
 
@@ -91,7 +91,7 @@ def build_parser(config):
         type=str,
         default="output",
         choices=["output", "total"],
-        help="output=只统计生成token；total=输入+输出token。",
+        help="output: count generated tokens only; total: count input and output tokens.",
     )
     parser.add_argument("--device", type=str, default="cuda", choices=["cuda", "cpu"])
     parser.add_argument("--cuda_visible_devices", type=str, default=None)
@@ -222,7 +222,7 @@ def benchmark_checkpoint(model, dataloader, args, device):
 def infer_method_names(checkpoints, method_names):
     if method_names is not None and len(method_names) > 0:
         if len(method_names) != len(checkpoints):
-            raise ValueError("--method_names 的数量必须与 --checkpoints 一致")
+            raise ValueError("The number of --method_names must match the number of --checkpoints.")
         return method_names
 
     names = []
@@ -247,7 +247,8 @@ def resolve_checkpoints(args, config):
             return cks
 
     raise ValueError(
-        "未提供 --checkpoints，且配置文件中没有可用的 resume_from_checkpoint。"
+        "No --checkpoints were provided, and the config does not contain a usable "
+        "resume_from_checkpoint value."
     )
 
 
