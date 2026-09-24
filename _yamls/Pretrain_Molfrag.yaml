@@ -15,13 +15,12 @@ queue_size: 13200
 task: "genmol"
 tsclosswt: 1
 lmlosswt: 10
-wtilosswt: 0
+wtilosswt: 1
 
 # my mission
-missing_fragment_loss_wt: 0
-frag2mol_loss_wt: 0
-keyword_loss_wt: 0
-
+missing_fragment_loss_wt: 1
+frag2mol_loss_wt: 1
+keyword_loss_wt: 1
 encode_text_lr: 1e-4
 encode_smiles_lr: 1e-4
 molt5_lr: 2e-4
